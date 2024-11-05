@@ -45,7 +45,7 @@ services:
       retries: 10
   backend_base:
     image:   ghcr.io/muchdogesec/obstracts_web_be_staging:staging
-    command: bash -c "python manage.py create_swagger_json"
+    command: bash -c "python manage.py migrate"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/obstracts_web
       - REDIS_URL=redis://redis:6379/7
@@ -75,7 +75,7 @@ services:
   obstracts:
     image: ghcr.io/muchdogesec/obstracts_web_staging:staging
       #command: "bash run.sh"
-    command: bash -c "python manage.py runserver 0.0.0.0:8001"
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8001"
     expose:
       - "8001:8001"
     environment:
