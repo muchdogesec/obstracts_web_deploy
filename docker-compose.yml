@@ -68,7 +68,7 @@ services:
     extends: backend_base
     command: bash -c "cd /app/ && celery -A obstracts_web worker -l info"
   backend_beat:
-    extends: backend_basepython manage.py migrate && python manage.py runserver 0.0.0.0:8000
+    extends: backend_base
     command: bash -c "cd /app/ && celery -A obstracts_web beat -l info"
   obstracts:
     image: ghcr.io/muchdogesec/obstracts_web_staging:staging
