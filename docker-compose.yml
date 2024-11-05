@@ -43,25 +43,37 @@ services:
       test: bash -c 'exec 6<>/dev/tcp/redis/6379'
       interval: 2s
       retries: 10
-  backend:
-    image:   ghcr.io/muchdogesec/obstracts_web_be:main
-    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
+  backend_base:
+    image:   ghcr.io/muchdogesec/obstracts_web_be_staging:staging
+    command: bash -c "python manage.py create_swagger_json"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/obstracts_web
-      - REDIS_URL=redis://redis:6379
-    restart: unless-stopped
+      - REDIS_URL=redis://redis:6379/7
+      - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
+      - redis_url=redis://localhost:6379/7
+    env_file:
+      - ./.env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+  backend:
+    extends: backend_base
+    command: bash -c "python manage.py create_swagger_json && gunicorn obstracts_web.wsgi"
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+  backend_celery:
+    extends: backend_base
+    command: bash -c "cd /app/ && celery -A obstracts_web worker -l info"
+  backend_beat:
+    extends: backend_basepython manage.py migrate && python manage.py runserver 0.0.0.0:8000
+    command: bash -c "cd /app/ && celery -A obstracts_web beat -l info"
   obstracts:
-    image: ghcr.io/muchdogesec/obstracts:main
-    command: "bash run.sh"
+    image: ghcr.io/muchdogesec/obstracts_web_staging:staging
+      #command: "bash run.sh"
+    command: bash -c "python manage.py runserver 0.0.0.0:8001"
     expose:
       - "8001:8001"
     environment:
@@ -72,8 +84,11 @@ services:
       - ARANGODB_HOST_URL=http://arangodb:8529/
       - ARANGODB_USERNAME=root
       - ARANGODB_PASSWORD=ARANGO_PASSWORD
-      - DJANGO_ALLOWED_HOSTS=localhost
+      - DJANGO_ALLOWED_HOSTS=obstracts
       - HISTORY4FEED_URL=http://history4feed:8002/
+      - CELERY_BROKER_URL=redis://redis:6379/10
+      - DJANGO_SECRET=adshiurafuri
+      - CTIBUTLER_HOST=http://localhost
     restart: unless-stopped
     depends_on:
       pg_client:
@@ -82,8 +97,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+  obstracts_celery:
+    extends: obstracts
+    command: >
+      bash -c "
+        celery -A obstracts.cjob worker -l INFO
+        "
   history4feed:
-    image: ghcr.io/muchdogesec/history4feed:main
+    image: ghcr.io/muchdogesec/history4feed_obstracts_web_staging:staging
     command: "bash run.sh"
     expose:
       - 8002:8002
@@ -95,6 +116,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=db
+      - DJANGO_SECRET=DJANGO_SECRET
     depends_on:
       pg_client:
         condition: service_completed_successfully
@@ -102,20 +124,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+  history4feed_celery:
+    extends: history4feed
+    command: "celery -A history4feed.h4fscripts worker -l INFO"
 
   frontend:
-    image:   ghcr.io/muchdogesec/obstract_web_fe:main
+    image:   ghcr.io/muchdogesec/obstracts_web_fe_staging:staging
+    command: "npm run build"
     volumes:
       - ./docker-data/frontend:/app/build
-    command: "npm run build"
-
   nginx:
     image: nginx:1.27
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker-data/frontend:/usr/share/nginx/html
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
       - obstracts
