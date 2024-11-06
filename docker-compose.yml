@@ -51,6 +51,7 @@ services:
       - REDIS_URL=redis://redis:6379/7
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
       - redis_url=redis://localhost:6379/7
+      - REDIS_CACHE_URL=redis://redis:6379/3
     volumes:
       - ./docker-data/backend/static_root:/app/static_root/
     env_file:
