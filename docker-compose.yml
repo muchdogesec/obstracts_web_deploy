@@ -125,6 +125,9 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=db
       - DJANGO_SECRET=DJANGO_SECRET
+      - EARLIEST_SEARCH_DATE=2020-01-01T00:00:00Z
+      - result_backend=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
     depends_on:
       pg_client:
         condition: service_completed_successfully
@@ -141,6 +144,8 @@ services:
     command: "npm run build"
     volumes:
       - ./docker-data/frontend:/app/build
+    env_file:
+      - ./.env
   nginx:
     image: nginx:1.27
     volumes:
@@ -150,6 +155,7 @@ services:
     ports:
       - "8080:80"
       - "8001:8000"
+      - "8002:8002"
     depends_on:
       - backend
 
