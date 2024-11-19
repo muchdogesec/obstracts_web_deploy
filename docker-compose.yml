@@ -151,7 +151,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker-data/frontend:/usr/share/nginx/html
-      - ./docker-data/backend/static_root:/usr/share/nginx/backend_static/static
+      - ./docker-data/backend/static_root:/usr/share/nginx/backend_static/dj-static
     ports:
       - "8080:80"
       - "8001:8000"
