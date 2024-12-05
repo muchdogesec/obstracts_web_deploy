@@ -6,8 +6,6 @@ services:
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
     volumes:
       - ./docker-data/backend/static_root:/app/static_root/
-    env_file:
-      - ./.env
     depends_on:
       obstracts:
         condition: service_healthy
@@ -59,8 +57,6 @@ services:
     command: "npm run build"
     volumes:
       - ./docker-data/frontend:/app/build
-    env_file:
-      - ./.env
   nginx:
     image: nginx:1.27
     volumes:

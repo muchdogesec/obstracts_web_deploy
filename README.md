@@ -13,12 +13,3 @@ For the;
 ```shell
 cp .example.env .env
 ```
-
-command, set the following:
-
-* `CSRF_TRUSTED_ORIGINS`
-	* staging: `https://api.obstracts.staging.signalscorps.com`
-	* production: `https://api.obstracts.com`
-* `FRONTEND_BASE_URL`
-	* staging: `https://app.obstracts.staging.signalscorps.com`
-	* production: `https://app.obstracts.com`
