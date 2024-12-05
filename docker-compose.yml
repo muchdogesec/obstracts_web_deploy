@@ -1,66 +1,14 @@
 services:
-  db:
-    image: postgres:16
-    # persist data beyond lifetime of container
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_DB=obstracts_web
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    healthcheck:
-      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
-      interval: 2s
-      retries: 10
-    expose:
-      - "5432:5432"
-  arangodb:
-    image: arangodb/arangodb:3.11
-    environment:
-      - ARANGO_ROOT_PASSWORD=ARANGO_PASSWORD
-    expose:
-      - "8529:8529"
-    volumes:
-      - ./docker-data/arangodb:/var/lib/arangodb3
-  pg_client:
-    environment:
-      PGHOST: db
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: postgres
-    build:
-      context: pg_client
-    command: "psql -h db -p 5432 -U postgres -f create_db.sh"
-    depends_on:
-      db:
-        condition: service_healthy
-  redis:
-    image: redis:7.4.1
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: bash -c 'exec 6<>/dev/tcp/redis/6379'
-      interval: 2s
-      retries: 10
   backend_base:
     image:   ghcr.io/muchdogesec/obstracts_web_be_staging:staging
     command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/obstracts_web
-      - REDIS_URL=redis://redis:6379/7
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
-      - redis_url=redis://localhost:6379/7
-      - REDIS_CACHE_URL=redis://redis:6379/3
     volumes:
       - ./docker-data/backend/static_root:/app/static_root/
     env_file:
       - ./.env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
       obstracts:
         condition: service_healthy
   backend:
@@ -80,26 +28,10 @@ services:
     expose:
       - "8001:8001"
     environment:
-      - POSTGRES_DB=obstracts
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_HOST=db
-      - ARANGODB_HOST_URL=http://arangodb:8529/
-      - ARANGODB_USERNAME=root
-      - ARANGODB_PASSWORD=ARANGO_PASSWORD
       - DJANGO_ALLOWED_HOSTS=obstracts
       - HISTORY4FEED_URL=http://history4feed:8002/
-      - CELERY_BROKER_URL=redis://redis:6379/10
-      - DJANGO_SECRET=adshiurafuri
       - CTIBUTLER_HOST=http://localhost
     restart: unless-stopped
-    depends_on:
-      pg_client:
-        condition: service_completed_successfully
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://obstracts:8001/api/schema/"]
       interval: 30s
@@ -108,9 +40,7 @@ services:
   obstracts_celery:
     extends: obstracts
     command: >
-      bash -c "
-        celery -A obstracts.cjob worker -l INFO
-        "
+      bash -c "celery -A obstracts.cjob worker -l INFO"
   history4feed:
     image: ghcr.io/muchdogesec/history4feed_obstracts_web_staging:staging
     command: "bash run.sh"
@@ -119,22 +49,7 @@ services:
     environment:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] django
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - POSTGRES_DB=history4feed
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_HOST=db
-      - DJANGO_SECRET=DJANGO_SECRET
       - EARLIEST_SEARCH_DATE=2020-01-01T00:00:00Z
-      - result_backend=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      pg_client:
-        condition: service_completed_successfully
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
   history4feed_celery:
     extends: history4feed
     command: "celery -A history4feed.h4fscripts worker -l INFO"
@@ -158,8 +73,3 @@ services:
       - "8002:8002"
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
-  redis_data:
-  react_data:
