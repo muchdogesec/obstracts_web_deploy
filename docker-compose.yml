@@ -1,6 +1,6 @@
 services:
   backend_base:
-    image:   ghcr.io/muchdogesec/obstracts_web_be_staging:staging
+    image:   ghcr.io/muchdogesec/obstracts_web_be_obstracts_web_staging:staging
     command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput"
     environment:
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
@@ -40,7 +40,7 @@ services:
     command: >
       bash -c "celery -A obstracts.cjob worker -l INFO"
   history4feed:
-    image: ghcr.io/muchdogesec/history4feed_obstracts_web_staging:staging
+    image: ghcr.io/muchdogesec/history4feed_web_staging:staging
     command: "bash run.sh"
     expose:
       - 8002:8002
@@ -53,7 +53,7 @@ services:
     command: "celery -A history4feed.h4fscripts worker -l INFO"
 
   frontend:
-    image:   ghcr.io/muchdogesec/obstracts_web_fe_staging:staging
+    image:   ghcr.io/muchdogesec/obstracts_web_fe_obstracts_web_staging:staging
     command: "npm run build"
     volumes:
       - ./docker-data/frontend:/app/build
