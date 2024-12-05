@@ -4,11 +4,14 @@ services:
     command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput"
     environment:
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
+      - 
     volumes:
       - ./docker-data/backend/static_root:/app/static_root/
     depends_on:
       obstracts:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   backend:
     extends: backend_base
     command: bash -c "python manage.py create_swagger_json && gunicorn obstracts_web.wsgi -b 0.0.0.0:8000"
@@ -35,6 +38,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   obstracts_celery:
     extends: obstracts
     command: >
@@ -48,6 +53,8 @@ services:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] django
       - EARLIEST_SEARCH_DATE=2020-01-01T00:00:00Z
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   history4feed_celery:
     extends: history4feed
     command: "celery -A history4feed.h4fscripts worker -l INFO"
