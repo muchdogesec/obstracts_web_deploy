@@ -4,7 +4,6 @@ services:
     command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput"
     environment:
       - OBSTRACT_SERVICE_BASE_URL=http://obstracts:8001
-      - 
     volumes:
       - ./docker-data/backend/static_root:/app/static_root/
     depends_on:
