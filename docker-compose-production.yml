@@ -30,7 +30,6 @@ services:
     environment:
       - DJANGO_ALLOWED_HOSTS=obstracts
       - HISTORY4FEED_URL=http://history4feed:8002/
-      - CTIBUTLER_HOST=http://localhost
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://obstracts:8001/api/schema/"]
